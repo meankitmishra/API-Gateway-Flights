@@ -1,13 +1,17 @@
-const { UserRepository } = require("../repositories");
+const { UserRepository, RoleRepository } = require("../repositories");
 const AppError = require("../utils/errors/app-error");
 const { StatusCodes } = require("http-status-codes");
 const { Auth } = require("../utils/common");
 
 const userRepository = new UserRepository();
-
+const roleRepository = new RoleRepository();
 async function createUser(data) {
 	try {
 		const user = await userRepository.create(data);
+		const role = await roleRepository.getRoleByName(
+			Enums.USER_ROLES_ENUMS.CUSTOMER
+		);
+		user.addRole(role);
 		return user;
 	} catch (error) {
 		console.log(error);
@@ -80,9 +84,67 @@ async function isAuthenticated(token) {
 		);
 	}
 }
+async function addRoletoUser(data) {
+	try {
+		const user = await userRepository.get(data.id);
+		if (!user) {
+			throw new AppError(
+				"No user found for the given id",
+				StatusCodes.NOT_FOUND
+			);
+		}
+		const role = await roleRepository.getRoleByName(data.role);
+		if (!role) {
+			throw new AppError(
+				"No user found for the given role",
+				StatusCodes.NOT_FOUND
+			);
+		}
+		user.addRole(role);
+		return user;
+	} catch (error) {
+		if (error instanceof AppError) throw error;
+		console.log(error);
+		throw new AppError(
+			"Something went wrong",
+			StatusCodes.INTERNAL_SERVER_ERROR
+		);
+	}
+}
+
+async function isAdmin(id) {
+	try {
+		const user = await userRepository.get(id);
+		if (!user) {
+			throw new AppError(
+				"No user found for the given id",
+				StatusCodes.NOT_FOUND
+			);
+		}
+		const adminrole = await roleRepository.getRoleByName(
+			Enums.USER_ROLES_ENUMS.ADMIN
+		);
+		if (!adminrole) {
+			throw new AppError(
+				"No user found for the given role",
+				StatusCodes.NOT_FOUND
+			);
+		}
+		return user.hasRole(adminrole);
+	} catch (error) {
+		if (error instanceof AppError) throw error;
+		console.log(error);
+		throw new AppError(
+			"Something went wrong",
+			StatusCodes.INTERNAL_SERVER_ERROR
+		);
+	}
+}
 
 module.exports = {
 	createUser,
 	signin,
 	isAuthenticated,
+	addRoletoUser,
+	isAdmin,
 };

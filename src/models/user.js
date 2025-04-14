@@ -1,5 +1,6 @@
 "use strict";
 const { Model } = require("sequelize");
+
 const bcrypt = require("bcrypt");
 const { ServerConfig } = require("../config");
 module.exports = (sequelize, DataTypes) => {
@@ -11,6 +12,7 @@ module.exports = (sequelize, DataTypes) => {
 		 */
 		static associate(models) {
 			// define association here
+			this.belongsToMany(models.Role, { through: "User_Roles", as: "role" });
 		}
 	}
 	User.init(
@@ -19,14 +21,15 @@ module.exports = (sequelize, DataTypes) => {
 				type: DataTypes.STRING,
 				allowNull: false,
 				unique: true,
-				validate: { isEmail: true },
+				validate: {
+					isEmail: true,
+				},
 			},
 			password: {
 				type: DataTypes.STRING,
 				allowNull: false,
 				validate: {
-					len: [8, 30],
-					is: ["^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^A-Za-z\\d]).{8,}$"],
+					len: [3, 50],
 				},
 			},
 		},
@@ -43,6 +46,5 @@ module.exports = (sequelize, DataTypes) => {
 		);
 		user.password = encryptedPassword;
 	});
-
 	return User;
 };
